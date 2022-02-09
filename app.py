@@ -3,7 +3,7 @@
 import datetime
 import pandas as pd
 
-from garminconnect import (
+from garminconnect2 import (
     Garmin,
     GarminConnectConnectionError,
     GarminConnectTooManyRequestsError,
