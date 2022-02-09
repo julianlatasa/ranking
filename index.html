@@ -40,18 +40,79 @@
   </div>
 <div id="resultado"></div>
  
+<div class="modal fade" id="pleaseWaitDialog" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+          <h1>Procesando...</h1>
+      </div>
+      <div class="modal-body">
+        <div class="progress">
+          <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100" style="width: 10%" id="progressbar">
+            <span class="sr-only" id="progresstext">Login a Garmin</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <!-- Modal Error -->
+  <div class="modal fade" id="modalerror" role="dialog">
+    <div class="modal-dialog">
+    
+      <!-- Modal content-->
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">Error</h4>
+        </div>
+        <div class="modal-body">
+          <p id="error"></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal" id="cerrarError">Cerrar</button>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+
 <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+
 <script src="https://code.jquery.com/jquery-3.5.1.js"
           integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc="
           crossorigin="anonymous"></script>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js" integrity="sha384-QJHtvGhmr9XOIpI6YVutG+2QOK9T+ZnN4kzFN1RtK3zEFEIsxhlmWl5/YESvpZ13" crossorigin="anonymous"></script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
-
 <script type="text/javascript">
-	$('#datepicker').datepicker();
+    var pleaseWait = $('#pleaseWaitDialog');
+
+    showError = function(mensaje) {
+	$('#pleaseWaitDialog').modal("hide");
+	$("#error").html(mensaje);	
+	$('#modalerror').modal("show");	
+    };
+
+    $('#cerrarError').on('click', function(e){
+	$('#modalerror').modal("hide");	
+    });
+
+    showPleaseWait = function () {
+        pleaseWait.modal('show');
+    };
+
+    hidePleaseWait = function () {
+        pleaseWait.modal('hide');
+    };
+    updateProgress = function (value, text) {
+	$('#progressbar').css('width', value+'%').attr('aria-valuenow', value);   
+	$('#progresstext').html(text);
+    };
 	$('#login-form').on('submit',function(e){
 		e.preventDefault();
+		showPleaseWait();
 		var formvalues = {
           		usuario: $("#usuario").val(),
           		password: $("#password").val(),
@@ -59,22 +120,49 @@
 		}
 		$.ajax({
         		type:'POST',
-        		url:'/query',
+        		url:'/login',
         		data: JSON.stringify(formvalues), 
         		success: function(data){
-				//console.log(data);
-				//alert('saved');
-				$("#resultado").html(data)
+				updateProgress(20,data);
+				get_contacts();
+				//$("#resultado").html(data)
 			},
                     	error: function (jqXHR, textStatus, errorThrown) {
-				$("#resultado").html(textStatus)
-                        	//alert('error!');
-				//console.log(textStatus);
+				showError(jqXHR.responseText);
 			},
 			//dataType: 'json',
 			contentType: "application/json"
 		})
 	});
+	
+	get_contacts = function() {
+		$.ajax({
+        		type:'GET',
+        		url:'/contacts',
+        		success: function(data){
+				updateProgress(30,data);
+				logout();
+			},
+                    	error: function (jqXHR, textStatus, errorThrown) {
+				showError(jqXHR.responseText);
+			}
+		})
+	};
+
+	logout = function() {
+		$.ajax({
+        		type:'GET',
+        		url:'/logout',
+        		success: function(data){
+				updateProgress(40,data);
+			},
+                    	error: function (jqXHR, textStatus, errorThrown) {
+				showError(jqXHR.responseText);
+			}
+		})
+	};
+
+
 </script>
  
 </body>
