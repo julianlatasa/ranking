@@ -4,14 +4,13 @@ import datetime
 import pandas as pd
 
 from garminconnect import (
-    Garmin,
     GarminConnectConnectionError,
     GarminConnectTooManyRequestsError,
     GarminConnectAuthenticationError,
 )
 
 from garminconnect2 import (
-    Garmin2,
+    Garmin,
 )
 
 
@@ -34,7 +33,7 @@ def cucu():
     dur= 3600
 
     ## Initialize Garmin api with your credentials
-    api = Garmin2(usuario, password)
+    api = Garmin(usuario, password)
 
     ## Login to Garmin Connect portal
     api.login()
