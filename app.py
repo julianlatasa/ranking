@@ -59,24 +59,24 @@ def login():
         fecha = params.get('fecha', "").strip()
         
     if ((not usuario) or (not password)):
-        return abort("No se ingreso un usuario o una clave") #abort(400, "No se ingreso un usuario o una clave")
+        return "No se ingreso un usuario o una clave",403 
     
     if (not fecha):
-        return abort(400, "No se ingreso una fecha")
+        return "No se ingreso una fecha",403
 
     try:
         today = datetime.datetime.strptime(fecha, "%Y-%m-%d").date()
     except:
-        return abort(400, "La fecha tiene un formato no valido")
+        return "La fecha tiene un formato no valido", 403
     
     cache['today'] = today
     
     cache['api'] = Garmin(usuario, password)
     try:
         if (cache['api'].login() == False):
-            return abort(400, "Error al loguearse a Garmin")
+            return "Error al loguearse a Garmin", 403
     except:
-        return abort(400, "Error inesperado al loguearse a Garmin")
+        return "Error inesperado al loguearse a Garmin", 403
 
     return 'Login Ok! - Buscando contactos'
 
@@ -90,7 +90,7 @@ def contacts():
     try:
         cache['connections'] = cache['api'].get_connections()
     except:
-        abort("Error al obtener conexiones")
+        return "Error al obtener conexiones", 403
     return "Contactos obtenidos! - Buscando datos personales"
 
 @app.route('/query', methods=['POST'])
