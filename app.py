@@ -13,17 +13,15 @@ from garminconnect2 import (
     Garmin
 )
 
-import garminconnect2
-
 import json
 import sqlite3
 
-from flask import Flask, request, render_template, abort
+from flask import Flask, request, render_template, abort, g
 
 
 
 app = Flask(__name__, template_folder='./')
-
+cache = {}
 
 def create_connection(db_file):
     """ create a database connection to the SQLite database
@@ -67,13 +65,15 @@ def login():
         return abort(400, "No se ingreso una fecha")
 
     try:
-        garminconnect2.today = datetime.datetime.strptime(fecha, "%Y-%m-%d").date()
+        today = datetime.datetime.strptime(fecha, "%Y-%m-%d").date()
     except:
         return abort(400, "La fecha tiene un formato no valido")
     
-    garminconnect2.api = Garmin(usuario, password)
+    cache['today'] = today
+    
+    cache['api'] = Garmin(usuario, password)
     try:
-        if (garminconnect2.api.login() == False):
+        if (cache['api'].login() == False):
             return abort(400, "Error al loguearse a Garmin")
     except:
         return abort(400, "Error inesperado al loguearse a Garmin")
@@ -82,13 +82,13 @@ def login():
 
 @app.route('/logout', methods=['GET'])
 def logout():
-    garminconnect2.api.logout
+    cache['api'].logout
     return "Logout!"
 
 @app.route('/contacts', methods=['GET'])
 def contacts():
     try:
-        garminconnect2.connections = garminconnect2.api.get_connections()
+        cache['connections'] = cache['api'].get_connections()
     except:
         abort("Error al obtener conexiones")
     return "Contactos obtenidos! - Buscando datos personales"

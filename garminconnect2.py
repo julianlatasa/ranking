@@ -3,10 +3,6 @@
 import logging
 logger = logging.getLogger(__name__)
 
-api = None
-today = None
-connections = None
-
 import garminconnect
 
 class Garmin(garminconnect.Garmin):
