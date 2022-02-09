@@ -26,3 +26,4 @@ gunicorn==20.0.4
 boto==2.49.0
 botocore==1.16.5
 garminconnect==0.1.44
+pandas=1.4.0
