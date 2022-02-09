@@ -69,15 +69,16 @@ def login():
     except:
         return "La fecha tiene un formato no valido", 403
     
-    cache['today'] = today
     
-    cache['api'] = Garmin(usuario, password)
+    api = Garmin(usuario, password)
     try:
-        if (cache['api'].login() == False):
+        if (api.login() == False):
             return "Error al loguearse a Garmin", 403
     except:
         return "Error inesperado al loguearse a Garmin", 403
 
+    cache['today'] = today
+    cache['api'] = api
     return 'Login Ok! - Buscando contactos'
 
 @app.route('/logout', methods=['GET'])
@@ -87,10 +88,12 @@ def logout():
 
 @app.route('/contacts', methods=['GET'])
 def contacts():
+    api = cache['api']
     try:
-        cache['connections'] = cache['api'].get_connections()
+        connections = api.get_connections()
     except:
         return "Error al obtener conexiones", 403
+    cache['connections'] = connections['userConnections']
     return "Contactos obtenidos! - Buscando datos personales"
 
 @app.route('/query', methods=['POST'])
