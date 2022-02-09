@@ -44,19 +44,19 @@ def cucu():
     data['Actividades'].append(act)
     data['Duracion'].append(dur)
 
-    connections = api.get_connections()
-    for connection in connections['userConnections']:
-        act = 0
-        dur = 0
-        activities = api.get_connection_activities(connection['displayName'],1,25)
-        for activitie in activities['activityList']:
-            datetime_object = datetime.datetime.strptime(activitie['startTimeLocal'], '%Y-%m-%d %H:%M:%S')
-            if (today >= datetime_object.date() >= lastweek):
-                act = act + 1
-                dur = dur + activitie['duration']
-        data['Usuario'].append(connection['fullName'])
-        data['Actividades'].append(act)
-        data['Duracion'].append(dur)
+#    connections = api.get_connections()
+#    for connection in connections['userConnections']:
+#        act = 0
+#        dur = 0
+#        activities = api.get_connection_activities(connection['displayName'],1,25)
+#        for activitie in activities['activityList']:
+#            datetime_object = datetime.datetime.strptime(activitie['startTimeLocal'], '%Y-%m-%d %H:%M:%S')
+#            if (today >= datetime_object.date() >= lastweek):
+#                act = act + 1
+#                dur = dur + activitie['duration']
+#        data['Usuario'].append(connection['fullName'])
+#        data['Actividades'].append(act)
+#        data['Duracion'].append(dur)
 
     api.logout()
 
