@@ -23,7 +23,7 @@ class SingletonGarmin:
     password = ''
     api = None
     connections = []
-    date = datetime.datetime.now.date()
+    date = None
     
     __instance = None
     @staticmethod    
