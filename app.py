@@ -16,12 +16,19 @@ from garminconnect2 import (
 import json
 import sqlite3
 
-from flask import Flask, request, render_template, abort, jsonify
+from flask import Flask, request, render_template, abort, jsonify, g
 
 
 
 app = Flask(__name__, template_folder='./')
 cache = {}
+
+def set_api(api):
+    if 'api' not in g:
+        g.api = api
+
+def get_api():
+    return g.api
 
 def create_connection(db_file):
     """ create a database connection to the SQLite database
@@ -78,18 +85,18 @@ def login():
         return "Error inesperado al loguearse a Garmin", 403
 
     cache['today'] = today
-    cache['api'] = api
+    set_api(api)
     return 'Login Ok! - Buscando contactos'
 
 @app.route('/logout', methods=['GET'])
 def logout():
-    api = cache['api']
+    api = get_api()
     api.logout
     return "Logout!"
 
 @app.route('/contacts', methods=['GET'])
 def contacts():
-    api = cache['api']
+    api = get_api()
     try:
         connections = api.get_connections()
     except:
@@ -101,7 +108,7 @@ def contacts():
 
 @app.route('/procesarme', methods=['GET'])
 def procesarme():
-    api = cache['api']
+    api = get_api()
     today = cache['today']
 
     lastweek = today - datetime.timedelta(days=7)
@@ -153,7 +160,7 @@ def procesarusuario():
         params = request.get_json()
         usuarionumero = params['usuarionumero']
 
-    api = cache['api']
+    api = get_api()
     today = cache['today']
     connections = cache['connections']
     
