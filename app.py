@@ -15,10 +15,7 @@ from garminconnect2 import (
 
 from singletonGarmin import SingletonGarmin
 
-from flask import Flask, request, render_template, jsonify, session
-
-from time import sleep
-from math import sqrt
+from flask import Flask, request, render_template, jsonify, session, Response, stream_with_context
 
 app = Flask(__name__, template_folder='./')
 apiGarmin = SingletonGarmin()
@@ -35,188 +32,10 @@ def hello_world():
 def form():
     return render_template('index.html')
 
-
-@app.route('/login', methods=['POST'])
-def login():
-    if request.method == 'POST':
-        params = request.get_json()
-        usuario, password = params['usuario'].strip(), params['password'].strip()
-        fecha = params.get('fecha', "").strip()
-        
-    if ((not usuario) or (not password)):
-        return "No se ingreso un usuario o una clave",403 
-    
-    if (not fecha):
-        return "No se ingreso una fecha",403
-
-    try:
-        today = datetime.datetime.strptime(fecha, "%Y-%m-%d")
-    except:
-        return "La fecha tiene un formato no valido", 403
-    
-
-    apiGarmin.setParams(usuario, password)
-    
-    api = apiGarmin.getApi()
-    try:
-        if (api.login() == False):
-            return "Error al loguearse a Garmin", 403
-    except:
-        return "Error inesperado al loguearse a Garmin" + apiGarmin.getParams(), 403
-
-    if not('today' in session):
-        session['today'] = today
-    return 'Login Ok! - Buscando contactos'
-
-@app.route('/logout', methods=['GET'])
-def logout():
-    api = apiGarmin.getApi()
-    api.logout
-    return "Logout!"
-
-@app.route('/contacts', methods=['GET'])
-def contacts():
-    api = apiGarmin.getApi()
-    try:
-        connections = api.get_connections()
-    except:
-        return "Error al obtener contactos", 403
-    if (not(connections) or not(len(connections)>0) or not('userConnections' in connections) ):
-        return "Error al procesar contactos", 403
-
-    apiGarmin.setConnections(connections['userConnections'])
-    result = {'mensaje' : 'Contactos obtenidos! - Buscando datos personales',
-              'contactos' : len(connections['userConnections'])}
-    return jsonify(result)
-
-@app.route('/procesarme', methods=['GET'])
-def procesarme():
-    api = apiGarmin.getApi()
-    fecha = session['today']
-
-    #Sun, 06 Feb 2022 00:00:00 GMT 
-    if isinstance(fecha, str):
-        today = datetime.datetime.strptime(fecha, "%a, %d %b %Y %H:%M:%S %Z").date()
-    else:
-        today = fecha.date()
-
-    lastweek = today - datetime.timedelta(days=7)
-    data = {'Usuario':'','Actividades':0, 'Duracion':0}
-
-    date_list = [today - datetime.timedelta(days=x) for x in range(7)]
-    dates = {'Usuario' : ''}
-    for d in date_list:
-        dates[d] = 0
-
-    try:
-        activities = api.get_activities(1,25)
-    except:
-        return "Error al obtener mis actividades", 403
-    if (not(activities) or not(len(activities)>0)):
-        return "Error al comenzar a procesar actividades", 403
-
-    try:
-        data['Usuario'] = api.get_full_name()
-        dates['Usuario'] = api.get_full_name()
-    except:
-        return "Error al obtener mi nombre completo", 403
-    
-    dur = 0
-    for activitie in activities:
-        datetime_object = datetime.datetime.strptime(activitie['startTimeLocal'], '%Y-%m-%d %H:%M:%S')
-        if (datetime_object.date() in dates):
-            dates[datetime_object.date()] = dates[datetime_object.date()] + 1
-        if (today >= datetime_object.date() > lastweek):
-            data['Actividades'] = data['Actividades'] + 1
-            dur = dur + activitie['duration']
-
-    data['Duracion'] = datetime.timedelta(seconds=dur)
-
-    if 'dates' in cache:
-        cache['dates'].append(dates)
-    else:
-        cache['dates'] = []
-        cache['dates'].append(dates)
-
-    if 'data' in cache:
-        cache['data'].append(data)
-    else:
-        cache['data'] = []
-        cache['data'].append(data)
-    session['today'] = today
-    return "Mi usuario fue procesado "
-
-@app.route('/procesarusuario', methods=['GET','POST'])
-def procesarusuario():
-    if request.method == 'POST':
-        params = request.get_json()
-        usuarionumero = params['usuarionumero']
-
-    api = apiGarmin.getApi()
-    fecha = session['today']
-    if isinstance(fecha, str):
-        today = datetime.datetime.strptime(fecha, "%a, %d %b %Y %H:%M:%S %Z").date()
-    else:
-        today = fecha.date()
-
-    connections = apiGarmin.getConnections()
-    
-    lastweek = today - datetime.timedelta(days=7)
-    data = {'Usuario':'','Actividades':0, 'Duracion':0}
-
-    date_list = [today - datetime.timedelta(days=x) for x in range(7)]
-    dates = {'Usuario' : ''}
-    for d in date_list:
-        dates[d] = 0
-
-    try:
-        connection = connections[usuarionumero]
-        data['Usuario'] = connection['fullName']
-        dates['Usuario'] = connection['fullName']
-    except:
-        return "Error al obtener nombre completo del usuario numero " + str(usuarionumero), 403
-
-    try:
-        activities = api.get_connection_activities(connection['displayName'],1,25)
-    except:
-        return "Error al obtener actividades de " + connection['fullName'], 403
-
-    if (not(activities) or not(len(activities)>0) or not('activityList' in activities) ):
-        return "Error al comenzar a procesar actividades de " + connection['fullName'], 403
-
-    dur = 0    
-    for activitie in activities['activityList']:
-        datetime_object = datetime.datetime.strptime(activitie['startTimeLocal'], '%Y-%m-%d %H:%M:%S')
-        if (datetime_object.date() in dates):
-            dates[datetime_object.date()] = dates[datetime_object.date()] + 1
-        if (today >= datetime_object.date() > lastweek):
-            data['Actividades'] = data['Actividades'] + 1
-            dur = dur + activitie['duration']
-
-    data['Duracion'] = datetime.timedelta(seconds=dur)
-    
-    cache['dates'].append(dates)
-    cache['data'].append(data)
-    session['today'] = today
-    return connection['fullName'] + " fue procesado "
-
-@app.route('/resultados', methods=['GET'])
-def resultados():
-    data = cache['data']
-    df = pd.DataFrame(data)
-    df.sort_values(by=['Actividades','Duracion'], inplace=True, ascending=False)
-
-    result = df.to_html()
-    session.pop('today')
-    cache['data'] = []
-    return result
-
-
 @app.route('/resultadoranking', methods=['GET'])
 def resultadoranking():
     resultado = cache['resultado']
     return resultado
-
 
 @app.route('/ranking', methods=['POST'])
 def ranking():
@@ -351,7 +170,10 @@ def ranking():
 
         cache['resultado'] = result   
 
-    return app.response_class(generate(), mimetype="text/plain")
+    #response = Response(stream_with_context(generate()),mimetype="text/plain")
+    #response.headers['X-Accel-Buffering'] = 'no'
+    #return response
+    return app.response_class(generate(), mimetype="text/plain", headers={'X-Accel-Buffering': 'no'})
     
 
 if __name__ =="__main__":

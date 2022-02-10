@@ -60,14 +60,13 @@
 </div>
 
   <!-- Modal Error -->
-  <div class="modal fade" id="modalError" role="dialog">
+  <div class="modal fade" id="modalError" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
     <div class="modal-dialog">
     
       <!-- Modal content-->
       <div class="modal-content">
         <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal">&times;</button>
-          <h4 class="modal-title">Error</h4>
+          <h1>Error!</h1>
         </div>
         <div class="modal-body">
           <p id="error"></p>
@@ -111,7 +110,7 @@
     showError = function(mensaje) {
     	hidePleaseWait();
     	$("#error").html(mensaje);	
-    	$('#modalerror').modal('show');	
+    	$('#modalError').modal('show');	
     };
 
     $('#cerrarError').on('click', function(e){
