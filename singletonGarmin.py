@@ -26,11 +26,10 @@ class SingletonGarmin:
     password = ''
     api = None
     connections = []
-    date = None
     
     __instance = None
-    @staticmethod    
 
+    @staticmethod    
     def getInstance():
       """ Static access method. """
       if SingletonGarmin.__instance == None:
@@ -46,12 +45,6 @@ class SingletonGarmin:
              self.usuario = usuario
              self.password = password
          SingletonGarmin.__instance = self
-
-    def setDate(self, date):
-        self.date = date
-    
-    def getDate(self):
-        return self.date
         
     def setConnections(self, connections):
         self.connections = connections
@@ -65,8 +58,6 @@ class SingletonGarmin:
             self.password = password
 
     def getParams(self):
-        print(self.usuario)
-        print(self.password)
         return (self.usuario + ' ' + self.password)
 
     def getApi(self):

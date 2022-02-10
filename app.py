@@ -18,7 +18,8 @@ from singletonGarmin import SingletonGarmin
 from flask import Flask, request, render_template, jsonify, session
 
 app = Flask(__name__, template_folder='./')
-apiGarmin = SingletonGarmin()
+with app.app_context():
+        apiGarmin = SingletonGarmin()
 app.secret_key = 'GarminConnect'
 cache = {}
 
