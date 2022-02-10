@@ -16,7 +16,7 @@ from garminconnect2 import (
 import json
 import sqlite3
 
-from flask import Flask, request, render_template, abort, g
+from flask import Flask, request, render_template, abort, jsonify
 
 
 
@@ -83,7 +83,8 @@ def login():
 
 @app.route('/logout', methods=['GET'])
 def logout():
-    cache['api'].logout
+    api = cache['api']
+    api.logout
     return "Logout!"
 
 @app.route('/contacts', methods=['GET'])
@@ -94,7 +95,112 @@ def contacts():
     except:
         return "Error al obtener conexiones", 403
     cache['connections'] = connections['userConnections']
-    return "Contactos obtenidos! - Buscando datos personales"
+    result = {'mensaje' : 'Contactos obtenidos! - Buscando datos personales',
+              'contactos' : len(connections['userConnections'])}
+    return jsonify(result)
+
+@app.route('/procesarme', methods=['GET'])
+def procesarme():
+    api = cache['api']
+    today = cache['today']
+
+    lastweek = today - datetime.timedelta(days=7)
+    data = {'Usuario':'','Actividades':0, 'Duracion':0}
+
+    date_list = [today - datetime.timedelta(days=x) for x in range(7)]
+    dates = {'Usuario' : ''}
+    for d in date_list:
+        dates[d] = 0
+
+    try:
+        activities = api.get_activities(1,25)
+    except:
+        return "Error al obtener mis actividades", 403
+
+    try:
+        data['Usuario'] = api.get_full_name()
+        dates['Usuario'] = api.get_full_name()
+    except:
+        return "Error al obtener mi nombre completo", 403
+    
+    dur = 0
+    for activitie in activities:
+        datetime_object = datetime.datetime.strptime(activitie['startTimeLocal'], '%Y-%m-%d %H:%M:%S')
+        if (datetime_object.date() in dates):
+            dates[datetime_object.date()] = dates[datetime_object.date()] + 1
+        if (today >= datetime_object.date() > lastweek):
+            data['Actividades'] = data['Actividades'] + 1
+            dur = dur + activitie['duration']
+
+    data['Duracion'] = datetime.timedelta(seconds=dur)
+
+    if 'dates' in cache:
+        cache['dates'].append(dates)
+    else:
+        cache['dates'] = []
+        cache['dates'].append(dates)
+
+    if 'data' in cache:
+        cache['data'].append(data)
+    else:
+        cache['data'] = []
+        cache['data'].append(data)
+    return "Mi usuario fue procesado "
+
+@app.route('/procesarusuario', methods=['GET','POST'])
+def procesarusuario():
+    if request.method == 'POST':
+        params = request.get_json()
+        usuarionumero = params['usuarionumero']
+
+    api = cache['api']
+    today = cache['today']
+    connections = cache['connections']
+    
+    lastweek = today - datetime.timedelta(days=7)
+    data = {'Usuario':'','Actividades':0, 'Duracion':0}
+
+    date_list = [today - datetime.timedelta(days=x) for x in range(7)]
+    dates = {'Usuario' : ''}
+    for d in date_list:
+        dates[d] = 0
+
+    try:
+        connection = connections[usuarionumero]
+        data['Usuario'] = connection['fullName']
+        dates['Usuario'] = connection['fullName']
+    except:
+        return "Error al obtener nombre completo del usuario numero " + str(usuarionumero), 403
+
+    try:
+        activities = api.get_connection_activities(connection['displayName'],1,25)
+    except:
+        return "Error al obtener actividades de " + connection['fullName'], 403
+
+    dur = 0    
+    for activitie in activities['activityList']:
+        datetime_object = datetime.datetime.strptime(activitie['startTimeLocal'], '%Y-%m-%d %H:%M:%S')
+        if (datetime_object.date() in dates):
+            dates[datetime_object.date()] = dates[datetime_object.date()] + 1
+        if (today >= datetime_object.date() > lastweek):
+            data['Actividades'] = data['Actividades'] + 1
+            dur = dur + activitie['duration']
+
+    data['Duracion'] = datetime.timedelta(seconds=dur)
+    
+    cache['dates'].append(dates)
+    cache['data'].append(data)
+    return connection['fullName'] + " fue procesado "
+
+@app.route('/resultados', methods=['GET'])
+def resultados():
+    data = cache['data']
+    df = pd.DataFrame(data)
+    df.sort_values(by=['Actividades','Duracion'], inplace=True, ascending=False)
+
+    result = df.to_html()
+    return result
+
 
 @app.route('/query', methods=['POST'])
 def query():

@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Squadra Ranking</title>
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
-
+   	<meta charset="UTF-8">
+   	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+   	<title>Squadra Ranking</title>
+   	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
 </head>
 <body>
   <div class="container">
@@ -38,8 +37,10 @@
       </div>
     </div>
   </div>
+
 <div id="resultado"></div>
- 
+
+  <!-- Modal Prograso -->
 <div class="modal fade" id="pleaseWaitDialog" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -88,15 +89,16 @@
 
 <script type="text/javascript">
     var pleaseWait = $('#pleaseWaitDialog');
+    var contactos = 0;
 
     showError = function(mensaje) {
-	$('#pleaseWaitDialog').modal("hide");
-	$("#error").html(mensaje);	
-	$('#modalerror').modal("show");	
+    	$('#pleaseWaitDialog').modal("hide");
+    	$("#error").html(mensaje);	
+    	$('#modalerror').modal("show");	
     };
 
     $('#cerrarError').on('click', function(e){
-	$('#modalerror').modal("hide");	
+    	$('#modalerror').modal("hide");	
     });
 
     showPleaseWait = function () {
@@ -106,60 +108,106 @@
     hidePleaseWait = function () {
         pleaseWait.modal('hide');
     };
+
     updateProgress = function (value, text) {
-	$('#progressbar').css('width', value+'%').attr('aria-valuenow', value);   
-	$('#progresstext').html(text);
+    	$('#progressbar').css('width', value+'%').attr('aria-valuenow', value);   
+    	$('#progresstext').html(text);
     };
+
 	$('#login-form').on('submit',function(e){
 		e.preventDefault();
 		showPleaseWait();
+    	updateProgress(10,"Login a Garmin");
 		var formvalues = {
           		usuario: $("#usuario").val(),
           		password: $("#password").val(),
           		fecha: $("#fecha").val()
 		}
 		$.ajax({
-        		type:'POST',
-        		url:'/login',
-        		data: JSON.stringify(formvalues), 
-        		success: function(data){
-				updateProgress(20,data);
-				get_contacts();
-				//$("#resultado").html(data)
-			},
-                    	error: function (jqXHR, textStatus, errorThrown) {
-				showError(jqXHR.responseText);
-			},
-			//dataType: 'json',
+      		type:'POST',
+      		async: true,
+      		url:'/login',
+      		data: JSON.stringify(formvalues), 
 			contentType: "application/json"
-		})
+		}).done(function (data) {
+    		updateProgress(20,data);
+			get_contacts();
+	    }).fail(function (jqXHR, textStatus) {
+			showError(jqXHR.responseText);
+        });
 	});
 	
 	get_contacts = function() {
 		$.ajax({
-        		type:'GET',
-        		url:'/contacts',
-        		success: function(data){
-				updateProgress(30,data);
-				logout();
-			},
-                    	error: function (jqXHR, textStatus, errorThrown) {
-				showError(jqXHR.responseText);
-			}
-		})
+    		type:'GET',
+      		async: true,
+    		url:'/contacts'
+		}).done(function (data) {
+			updateProgress(30,data.mensaje);
+			contactos = data.contactos;
+			procesarme();
+	    }).fail(function (jqXHR, textStatus) {
+			showError(jqXHR.responseText);
+        });
 	};
+
+	procesarme = function() {
+		$.ajax({
+    		type:'GET',
+      		async: true,
+    		url:'/procesarme'
+		}).done(function (data) {
+			updateProgress(40,data);
+			procesarcontactos();
+	    }).fail(function (jqXHR, textStatus) {
+			showError(jqXHR.responseText);
+        });
+	};
+
+	procesarcontactos = function() {
+    	for (let i = 0; i < contactos; i++) {
+
+		var formvalues = {
+          		usuarionumero: i
+		}
+    		$.ajax({
+        		type:'POST',
+          		async: true,
+        		url:'/procesarusuario',
+        		data: JSON.stringify(formvalues), 
+    			contentType: "application/json"
+    		}).done(function (data) {
+   				updateProgress(40+i,data);
+   				logout();
+    	    }).fail(function (jqXHR, textStatus) {
+    			showError(jqXHR.responseText);
+            });
+
+        } 
+	
+	};
+
 
 	logout = function() {
 		$.ajax({
-        		type:'GET',
-        		url:'/logout',
-        		success: function(data){
-				updateProgress(40,data);
-			},
-                    	error: function (jqXHR, textStatus, errorThrown) {
-				showError(jqXHR.responseText);
-			}
-		})
+            type:'GET',
+      		async: true,
+        	url:'/logout'
+  		}).done(function (data) {
+			updateProgress(40,data);
+			hidePleaseWait();
+	    }).fail(function (jqXHR, textStatus) {
+			showError(jqXHR.responseText);
+        });
+		$.ajax({
+            type:'GET',
+      		async: true,
+        	url:'/resultados'
+  		}).done(function (data) {
+			$("#resultado").html(data)
+	    }).fail(function (jqXHR, textStatus) {
+			showError(jqXHR.responseText);
+        });
 	};
 
 
