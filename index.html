@@ -23,8 +23,8 @@
                 <label for="password">Password</label>
               </div>
               <div class="form-floating mb-3">
-        	<input type="date" class="form-control" id="fecha" placeholder="Fecha">
-                <label for="fecha">Fecha</label>
+        	<input type="date" class="form-control" id="fechahasta" placeholder="FechaHasta">
+                <label for="fechahasta">Fecha Hasta</label>
               </div>
 
               <div class="d-grid">
@@ -39,6 +39,8 @@
   </div>
 
 <div id="resultado"></div>
+
+<div id="resultadodates"></div>
 
   <!-- Modal Prograso -->
 <div class="modal fade" id="pleaseWaitDialog" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
@@ -129,7 +131,7 @@
 		var formvalues = {
           		usuario: $("#usuario").val(),
           		password: $("#password").val(),
-          		fecha: $("#fecha").val()
+          		fecha: $("#fechahasta").val()
 		}
 
 		$.ajax({
@@ -163,6 +165,7 @@
 		}).done(function (data) {
     		updateProgress(100,'Finalizado');
 			resultado();
+			resultadodates();
 	    }).fail(function (jqXHR, textStatus) {
 			showError(jqXHR.responseText);
         });
@@ -175,6 +178,19 @@
       		url:'/resultadoranking',
 		}).done(function (data) {
 			$("#resultado").html(data)
+            hidePleaseWait();
+	    }).fail(function (jqXHR, textStatus) {
+			showError(jqXHR.responseText);
+        });
+    }
+
+    resultadodates = function() {
+    	$.ajax({
+      		type:'GET',
+      		async: true,
+      		url:'/resultadodates',
+		}).done(function (data) {
+			$("#resultadodates").html(data)
             hidePleaseWait();
 	    }).fail(function (jqXHR, textStatus) {
 			showError(jqXHR.responseText);

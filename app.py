@@ -38,6 +38,13 @@ def resultadoranking():
     cache['resultado'] = ''
     return resultado
 
+@app.route('/resultadodates', methods=['GET'])
+def resultadodates():
+    resultado = cache['resultadodates']
+    cache['resultadodates'] = ''
+    return resultado
+
+
 @app.route('/ranking', methods=['POST'])
 def ranking():
     if request.method == 'POST':
@@ -83,12 +90,12 @@ def ranking():
         date_list = [today - datetime.timedelta(days=x) for x in range(7)]
         dates = {'Usuario' : ''}
         for d in date_list:
-            dates[d] = 0
+            dates[d] = []
     
         yield "Obteniendo actividades del usuario\n"
         
         try:
-            activities = api.get_activities(1,25)
+            activities = api.get_activities(0,25)
         except:
             return "Error al obtener mis actividades", 403
     
@@ -103,13 +110,17 @@ def ranking():
 
         dur = 0
         for activitie in activities:
-            datetime_object = datetime.datetime.strptime(activitie['startTimeLocal'], '%Y-%m-%d %H:%M:%S')
-            if (datetime_object.date() in dates):
-                dates[datetime_object.date()] = dates[datetime_object.date()] + 1
-            if (today >= datetime_object.date() > lastweek):
-                data['Actividades'] = data['Actividades'] + 1
-                dur = dur + activitie['duration']
+            if (activitie['activityType']['typeKey'] in ('running','indoor_cycling','lap_swimming','cycling','open_water_swimming','mountain_biking','treadmill_running','road_biking')):
+                datetime_object = datetime.datetime.strptime(activitie['startTimeLocal'], '%Y-%m-%d %H:%M:%S')
+                if ((datetime_object.date() in dates) and not(activitie['activityType']['typeKey'] in dates[datetime_object.date()])):
+                    dates[datetime_object.date()].append(activitie['activityType']['typeKey']) #dates[datetime_object.date()] + 1
+                #if (today >= datetime_object.date() > lastweek):
+                    #data['Actividades'] = data['Actividades'] + 1
+                    dur = dur + activitie['duration']
     
+        for d in date_list:
+            data['Actividades'] = data['Actividades'] + len(dates[d])
+
         data['Duracion'] = datetime.timedelta(seconds=dur)
     
         cache['dates'] = []
@@ -125,7 +136,7 @@ def ranking():
             date_list = [today - datetime.timedelta(days=x) for x in range(7)]
             dates = {'Usuario' : ''}
             for d in date_list:
-                dates[d] = 0
+                dates[d] = []
     
             try:
                 data['Usuario'] = user['fullName']
@@ -136,7 +147,7 @@ def ranking():
             yield "Obteniendo actividades de " + user['fullName'] + "\n"
             
             try:
-                activities = api.get_connection_activities(user['displayName'],1,25)
+                activities = api.get_connection_activities(user['displayName'],0,25)
             except:
                 #return "Error al obtener actividades de " + user['fullName'], 403
                 activities = {'activityList':[]}
@@ -146,12 +157,14 @@ def ranking():
     
             dur = 0    
             for activitie in activities['activityList']:
-                datetime_object = datetime.datetime.strptime(activitie['startTimeLocal'], '%Y-%m-%d %H:%M:%S')
-                if (datetime_object.date() in dates):
-                    dates[datetime_object.date()] = dates[datetime_object.date()] + 1
-                if (today >= datetime_object.date() > lastweek):
-                    data['Actividades'] = data['Actividades'] + 1
-                    dur = dur + activitie['duration']
+                if (activitie['activityType']['typeKey'] in ('running','indoor_cycling','lap_swimming','cycling','open_water_swimming','mountain_biking','treadmill_running','road_biking')):
+                    datetime_object = datetime.datetime.strptime(activitie['startTimeLocal'], '%Y-%m-%d %H:%M:%S')
+                    if ((datetime_object.date() in dates) and not(activitie['activityType']['typeKey'] in dates[datetime_object.date()])):
+                        dates[datetime_object.date()].append(activitie['activityType']['typeKey']) #dates[datetime_object.date()] + 1
+                        dur = dur + activitie['duration']
+    
+            for d in date_list:
+                data['Actividades'] = data['Actividades'] + len(dates[d])
         
             data['Duracion'] = datetime.timedelta(seconds=dur)
             
@@ -168,6 +181,16 @@ def ranking():
         cache['data'] = []
 
         cache['resultado'] = result   
+
+        dates = cache['dates']
+        df = pd.DataFrame(dates)
+        #df.sort_values(by=['Actividades','Duracion'], inplace=True, ascending=False)
+    
+        result = df.to_html()
+        cache['dates'] = []
+
+        cache['resultadodates'] = result   
+
 
     #response = Response(stream_with_context(generate()),mimetype="text/plain")
     #response.headers['X-Accel-Buffering'] = 'no'
