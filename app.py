@@ -15,46 +15,12 @@ from garminconnect2 import (
 
 from singletonGarmin import SingletonGarmin
 
-import json
-import sqlite3
-
-from flask import Flask, request, render_template, abort, jsonify
-
-class fechaHoy:
-    fecha = None
-    
-    def __init_(self):
-        self.fecha = None
-        
-    def setDate(self, fecha):
-        self.fecha = fecha
-        
-    def getDate(self):
-        return self.fecha
+from flask import Flask, request, render_template, jsonify, session
 
 app = Flask(__name__, template_folder='./')
 apiGarmin = SingletonGarmin()
-todayClass = fechaHoy()
+app.secret_key = 'GarminConnect'
 cache = {}
-
-def create_connection(db_file):
-    """ create a database connection to the SQLite database
-        specified by db_file
-    :param db_file: database file
-    :return: Connection object or None
-    """
-    #con = create_connection('login.db')
-    #cursor = con.cursor()
-    #cursor.execute("CREATE TABLE IF NOT EXISTS login (usuario VARCHAR(255) NOT NULL, password CHAR(25) NOT NULL);")
-    #con.execute("INSERT INTO login (usuario, password) VALUES (?, ?)",tuple(data.values()))
-
-    conn = None
-    try:
-        conn = sqlite3.connect(db_file)
-        return conn
-    except sqlite3.Error as e:
-        print(e)
-    return conn
 
 @app.route('/')
 def hello_world():
@@ -79,7 +45,7 @@ def login():
         return "No se ingreso una fecha",403
 
     try:
-        today = datetime.datetime.strptime(fecha, "%Y-%m-%d").date()
+        today = datetime.datetime.strptime(fecha, "%Y-%m-%d")
     except:
         return "La fecha tiene un formato no valido", 403
     
@@ -93,7 +59,8 @@ def login():
     except:
         return "Error inesperado al loguearse a Garmin", 403
 
-    todayClass.setDate(today)
+    if not('today' in session):
+        session['today'] = today
     return 'Login Ok! - Buscando contactos'
 
 @app.route('/logout', methods=['GET'])
@@ -117,7 +84,13 @@ def contacts():
 @app.route('/procesarme', methods=['GET'])
 def procesarme():
     api = apiGarmin.getApi()
-    today = todayClass.getDate()
+    fecha = session['today']
+
+    #Sun, 06 Feb 2022 00:00:00 GMT 
+    if isinstance(fecha, str):
+        today = datetime.datetime.strptime(fecha, "%a, %d %b %Y %H:%M:%S %Z").date()
+    else:
+        today = fecha.date()
 
     lastweek = today - datetime.timedelta(days=7)
     data = {'Usuario':'','Actividades':0, 'Duracion':0}
@@ -160,6 +133,7 @@ def procesarme():
     else:
         cache['data'] = []
         cache['data'].append(data)
+    session['today'] = today
     return "Mi usuario fue procesado "
 
 @app.route('/procesarusuario', methods=['GET','POST'])
@@ -169,7 +143,12 @@ def procesarusuario():
         usuarionumero = params['usuarionumero']
 
     api = apiGarmin.getApi()
-    today = todayClass.getDate()
+    fecha = session['today']
+    if isinstance(fecha, str):
+        today = datetime.datetime.strptime(fecha, "%a, %d %b %Y %H:%M:%S %Z").date()
+    else:
+        today = fecha.date()
+
     connections = apiGarmin.getConnections()
     
     lastweek = today - datetime.timedelta(days=7)
@@ -205,6 +184,7 @@ def procesarusuario():
     
     cache['dates'].append(dates)
     cache['data'].append(data)
+    session['today'] = today
     return connection['fullName'] + " fue procesado "
 
 @app.route('/resultados', methods=['GET'])
@@ -214,6 +194,8 @@ def resultados():
     df.sort_values(by=['Actividades','Duracion'], inplace=True, ascending=False)
 
     result = df.to_html()
+    session.pop('today')
+    cache['data'] = []
     return result
 
 
