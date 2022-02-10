@@ -20,10 +20,21 @@ import sqlite3
 
 from flask import Flask, request, render_template, abort, jsonify
 
-
+class fechaHoy:
+    fecha = None
+    
+    def __init_(self):
+        self.fecha = None
+        
+    def setDate(self, fecha):
+        self.fecha = fecha
+        
+    def getDate(self):
+        return self.fecha
 
 app = Flask(__name__, template_folder='./')
 apiGarmin = SingletonGarmin()
+todayClass = fechaHoy()
 cache = {}
 
 def create_connection(db_file):
@@ -82,7 +93,7 @@ def login():
     except:
         return "Error inesperado al loguearse a Garmin", 403
 
-    apiGarmin.setDate(today)
+    todayClass.setDate(today)
     return 'Login Ok! - Buscando contactos'
 
 @app.route('/logout', methods=['GET'])
@@ -106,7 +117,7 @@ def contacts():
 @app.route('/procesarme', methods=['GET'])
 def procesarme():
     api = apiGarmin.getApi()
-    today = apiGarmin.getDate()
+    today = todayClass.getDate()
 
     lastweek = today - datetime.timedelta(days=7)
     data = {'Usuario':'','Actividades':0, 'Duracion':0}
@@ -158,7 +169,7 @@ def procesarusuario():
         usuarionumero = params['usuarionumero']
 
     api = apiGarmin.getApi()
-    today = apiGarmin.getDate()
+    today = todayClass.getDate()
     connections = apiGarmin.getConnections()
     
     lastweek = today - datetime.timedelta(days=7)
