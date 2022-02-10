@@ -57,7 +57,7 @@ def login():
         if (api.login() == False):
             return "Error al loguearse a Garmin", 403
     except:
-        return "Error inesperado al loguearse a Garmin", 403
+        return "Error inesperado al loguearse a Garmin" + api.getParams(), 403
 
     if not('today' in session):
         session['today'] = today

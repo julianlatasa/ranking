@@ -17,6 +17,9 @@ from garminconnect2 import (
     Garmin
 )
 
+import logging
+logging.basicConfig(filename='garminerr.log', filemode='w', level=logging.DEBUG)
+
 class SingletonGarmin:
 
     usuario = ''
@@ -64,6 +67,7 @@ class SingletonGarmin:
     def getParams(self):
         print(self.usuario)
         print(self.password)
+        return (self.usuario + ' ' + self.password)
 
     def getApi(self):
         if (self.api is None):
