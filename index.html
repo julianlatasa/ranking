@@ -131,6 +131,7 @@
 			contentType: "application/json"
 		}).done(function (data) {
     		updateProgress(20,data);
+    		sleep(500);
 			get_contacts();
 	    }).fail(function (jqXHR, textStatus) {
 			showError(jqXHR.responseText);
@@ -145,6 +146,7 @@
 		}).done(function (data) {
 			updateProgress(30,data.mensaje);
 			contactos = data.contactos;
+    		sleep(500);
 			procesarme();
 	    }).fail(function (jqXHR, textStatus) {
 			showError(jqXHR.responseText);
@@ -158,6 +160,7 @@
     		url:'/procesarme'
 		}).done(function (data) {
 			updateProgress(40,data);
+    		sleep(500);
 			procesarcontactos();
 	    }).fail(function (jqXHR, textStatus) {
 			showError(jqXHR.responseText);
@@ -178,6 +181,7 @@
     			contentType: "application/json"
     		}).done(function (data) {
    				updateProgress(40+i,data);
+        		sleep(500);
    				logout();
     	    }).fail(function (jqXHR, textStatus) {
     			showError(jqXHR.responseText);
@@ -195,6 +199,7 @@
         	url:'/logout'
   		}).done(function (data) {
 			updateProgress(40,data);
+    		sleep(500);
 			hidePleaseWait();
 	    }).fail(function (jqXHR, textStatus) {
 			showError(jqXHR.responseText);
@@ -204,6 +209,7 @@
       		async: true,
         	url:'/resultados'
   		}).done(function (data) {
+    		sleep(500);
 			$("#resultado").html(data)
 	    }).fail(function (jqXHR, textStatus) {
 			showError(jqXHR.responseText);
