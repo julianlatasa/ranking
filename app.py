@@ -75,7 +75,10 @@ def contacts():
     try:
         connections = api.get_connections()
     except:
-        return "Error al obtener conexiones", 403
+        return "Error al obtener contactos", 403
+    if (not(connections) or not(len(connections)>0) or not('userConnections' in connections) ):
+        return "Error al procesar contactos", 403
+
     apiGarmin.setConnections(connections['userConnections'])
     result = {'mensaje' : 'Contactos obtenidos! - Buscando datos personales',
               'contactos' : len(connections['userConnections'])}
@@ -104,6 +107,8 @@ def procesarme():
         activities = api.get_activities(1,25)
     except:
         return "Error al obtener mis actividades", 403
+    if (not(activities) or not(len(activities)>0)):
+        return "Error al comenzar a procesar actividades", 403
 
     try:
         data['Usuario'] = api.get_full_name()
@@ -171,6 +176,9 @@ def procesarusuario():
     except:
         return "Error al obtener actividades de " + connection['fullName'], 403
 
+    if (not(activities) or not(len(activities)>0) or not('activityList' in activities) ):
+        return "Error al comenzar a procesar actividades de " + connection['fullName'], 403
+
     dur = 0    
     for activitie in activities['activityList']:
         datetime_object = datetime.datetime.strptime(activitie['startTimeLocal'], '%Y-%m-%d %H:%M:%S')
@@ -201,81 +209,128 @@ def resultados():
 
 @app.route('/query', methods=['POST'])
 def query():
-    usuario = ''
-    password = ''
     if request.method == 'POST':
-        usuario = request.get_json().get('usuario')
-        password = request.get_json().get('password')
-        fecha = request.get_json().get('fecha')
-    
-    if (usuario == ''):
-        return 'El usuario o clave no son correctos'
-    
-    if (fecha is None):
-        return "La fecha es invalida"
+        params = request.get_json()
+        usuario, password = params['usuario'].strip(), params['password'].strip()
+        fecha = params.get('fecha', "").strip()
         
-    today = datetime.datetime.strptime(fecha, "%Y-%m-%d").date()
+    if ((not usuario) or (not password)):
+        return "No se ingreso un usuario o una clave",403 
     
+    if (not fecha):
+        return "No se ingreso una fecha",403
+
+    try:
+        today = datetime.datetime.strptime(fecha, "%Y-%m-%d").date()
+    except:
+        return "La fecha tiene un formato no valido", 403
+
+    apiGarmin.setParams(usuario, password)
+    
+    api = apiGarmin.getApi()
+    try:
+        if (api.login() == False):
+            return "Error al loguearse a Garmin", 403
+    except:
+        return "Error inesperado al loguearse a Garmin" + apiGarmin.getParams(), 403
+
+    try:
+        connections = api.get_connections()
+    except:
+        return "Error al obtener contactos", 403
+
+    if (not(connections) or not(len(connections)>0) or not('userConnections' in connections) ):
+        return "Error al procesar contactos", 403
+
+    userConnections = connections['userConnections']
+
     lastweek = today - datetime.timedelta(days=7)
-    data = {'Usuario':[],'Actividades':[], 'Duracion':[]}
-    act = 0
-    dur= 0
-    row=0
+    data = {'Usuario':'','Actividades':0, 'Duracion':0}
 
     date_list = [today - datetime.timedelta(days=x) for x in range(7)]
-    dates = {'Usuario' : []}
+    dates = {'Usuario' : ''}
     for d in date_list:
-        dates[d] = []
-    #dates = {date : [] for date in date_list}
+        dates[d] = 0
 
-    ## Initialize Garmin api with your credentials
-    api = Garmin(usuario, password)
+    try:
+        activities = api.get_activities(1,25)
+    except:
+        return "Error al obtener mis actividades", 403
 
-    ## Login to Garmin Connect portal
-    api.login()
+    if (not(activities) or not(len(activities)>0)):
+        return "Error al comenzar a procesar actividades", 403
 
-    activities = api.get_activities(1,25)
-    dates['Usuario'].append(api.get_full_name())
-    for d in date_list:
-        dates[d].append(0)
+    try:
+        data['Usuario'] = api.get_full_name()
+        dates['Usuario'] = api.get_full_name()
+    except:
+        return "Error al obtener mi nombre completo", 403
+    
+    dur = 0
     for activitie in activities:
         datetime_object = datetime.datetime.strptime(activitie['startTimeLocal'], '%Y-%m-%d %H:%M:%S')
         if (datetime_object.date() in dates):
-            dates[datetime_object.date()][row] = dates[datetime_object.date()][row] + 1
+            dates[datetime_object.date()] = dates[datetime_object.date()] + 1
         if (today >= datetime_object.date() > lastweek):
-            act = act + 1
+            data['Actividades'] = data['Actividades'] + 1
             dur = dur + activitie['duration']
-    data['Usuario'].append(api.get_full_name())
-    data['Actividades'].append(act)
-    data['Duracion'].append(dur)
 
-    connections = api.get_connections()
-    for connection in connections['userConnections']:
-        act = 0
-        dur = 0
-        row = row + 1
-        dates['Usuario'].append(connection['fullName'])
+    data['Duracion'] = datetime.timedelta(seconds=dur)
+
+    cache['dates'] = []
+    cache['dates'].append(dates)
+
+    cache['data'] = []
+    cache['data'].append(data)
+
+    for user in userConnections:    
+
+        data = {'Usuario':'','Actividades':0, 'Duracion':0}
+    
+        date_list = [today - datetime.timedelta(days=x) for x in range(7)]
+        dates = {'Usuario' : ''}
         for d in date_list:
-            dates[d].append(0)
-        activities = api.get_connection_activities(connection['displayName'],1,25)
+            dates[d] = 0
+
+        try:
+            data['Usuario'] = user['fullName']
+            dates['Usuario'] = user['fullName']
+        except:
+            return "Error al obtener nombre completo del usuario numero " + str(user), 403
+
+        try:
+            activities = api.get_connection_activities(user['displayName'],1,25)
+        except:
+            return "Error al obtener actividades de " + user['fullName'], 403
+
+        if (not(activities) or not(len(activities)>0) or not('activityList' in activities) ):
+            return "Error al comenzar a procesar actividades de " + user['fullName'], 403
+
+        dur = 0    
         for activitie in activities['activityList']:
             datetime_object = datetime.datetime.strptime(activitie['startTimeLocal'], '%Y-%m-%d %H:%M:%S')
             if (datetime_object.date() in dates):
-                dates[datetime_object.date()][row] = dates[datetime_object.date()][row] + 1
+                dates[datetime_object.date()] = dates[datetime_object.date()] + 1
             if (today >= datetime_object.date() > lastweek):
-                act = act + 1
+                data['Actividades'] = data['Actividades'] + 1
                 dur = dur + activitie['duration']
-        data['Usuario'].append(connection['fullName'])
-        data['Actividades'].append(act)
-        data['Duracion'].append(dur)
+    
+        data['Duracion'] = datetime.timedelta(seconds=dur)
+        
+        cache['dates'].append(dates)
+        cache['data'].append(data)
 
-    api.logout()
+    api.logout
 
+    data = cache['data']
     df = pd.DataFrame(data)
     df.sort_values(by=['Actividades','Duracion'], inplace=True, ascending=False)
 
     result = df.to_html()
+    cache['data'] = []
+
     return result
+
 
 if __name__ =="__main__":
     app.run(debug=True, port=8080)

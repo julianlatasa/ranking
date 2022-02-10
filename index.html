@@ -117,7 +117,8 @@
 	$('#login-form').on('submit',function(e){
 		e.preventDefault();
 		showPleaseWait();
-    	updateProgress(10,"Login a Garmin");
+    	//updateProgress(10,"Login a Garmin");
+    	updateProgress(100,"Consultando datos a Garmin");
 		var formvalues = {
           		usuario: $("#usuario").val(),
           		password: $("#password").val(),
@@ -126,14 +127,16 @@
 		$.ajax({
       		type:'POST',
       		async: true,
-      		url:'/login',
+      		url:'/query', // url:'/login',
       		data: JSON.stringify(formvalues), 
 			contentType: "application/json"
 		}).done(function (data) {
-    		updateProgress(20,data);
-    		setTimeout(function(){
-    			get_contacts();
-            }, 250);
+			$("#resultado").html(data)
+    		//updateProgress(20,data);
+    		//setTimeout(function(){
+    		//	get_contacts();
+            //}, 250);
+            hidePleaseWait();
 	    }).fail(function (jqXHR, textStatus) {
 			showError(jqXHR.responseText);
         });

@@ -17,9 +17,6 @@ from garminconnect2 import (
     Garmin
 )
 
-import logging
-logging.basicConfig(filename='garminerr.log', filemode='w', level=logging.DEBUG)
-
 class SingletonGarmin:
 
     usuario = ''
