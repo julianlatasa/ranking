@@ -35,6 +35,7 @@ def form():
 @app.route('/resultadoranking', methods=['GET'])
 def resultadoranking():
     resultado = cache['resultado']
+    cache['resultado'] = ''
     return resultado
 
 @app.route('/ranking', methods=['POST'])
