@@ -5,6 +5,8 @@ Created on Wed Feb  9 23:38:20 2022
 @author: Julian Latasa
 """
 
+import datetime
+
 from garminconnect import (
     GarminConnectConnectionError,
     GarminConnectTooManyRequestsError,
@@ -21,7 +23,7 @@ class SingletonGarmin:
     password = ''
     api = None
     connections = []
-    date = None
+    date = datetime.datetime.now.date()
     
     __instance = None
     @staticmethod    
