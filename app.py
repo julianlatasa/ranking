@@ -26,14 +26,6 @@ app.secret_key = 'GarminConnect'
 cache = {}
 
 
-@app.route("/stream")
-def stream():
-    def generate():
-        for i in range(500):
-            yield "{}\n".format(sqrt(i))
-            sleep(1)
-
-    return app.response_class(generate(), mimetype="text/plain")
 
 @app.route('/')
 def hello_world():
@@ -328,7 +320,8 @@ def ranking():
             try:
                 activities = api.get_connection_activities(user['displayName'],1,25)
             except:
-                return "Error al obtener actividades de " + user['fullName'], 403
+                #return "Error al obtener actividades de " + user['fullName'], 403
+                activities = {'activityList':[]}
     
             if (not(activities) or not(len(activities)>0) or not('activityList' in activities) ):
                 return "Error al comenzar a procesar actividades de " + user['fullName'], 403

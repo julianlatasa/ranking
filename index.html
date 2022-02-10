@@ -95,8 +95,8 @@
 -->
 
 <script>
-    var latest = document.getElementById('latest');
-    var output = document.getElementById('output');
+    //var latest = document.getElementById('latest');
+    //var output = document.getElementById('output');
     var lastResponseLength;
     var progress = 0;
 
@@ -155,22 +155,14 @@
                         progressResponse = response.substring(lastResponseLength);
                         lastResponseLength = response.length;
                     }
-                    //var parsedResponse = JSON.parse(progressResponse);
-                    //$('#progressTest').text(progressResponse);
-                    //latest.textContent = progressResponse
-                    //$('#fullResponse').text(parsedResponse.message);
-                    /*var item = document.createElement('li');
-                    item.textContent = progressResponse;
-                    output.appendChild(item);*/
-                    if (progress < 100) 
+                    if (progress < 100) {
                         progress = progress + 4;
+                    } 
                     updateProgress(progress,progressResponse);
-                    //$('.progress-bar').css('width', parsedResponse.progress + '%');
                 }
             }
 		}).done(function (data) {
     		updateProgress(100,'Finalizado');
-            //latest.textContent = 'Finalizado';
 			resultado();
 	    }).fail(function (jqXHR, textStatus) {
 			showError(jqXHR.responseText);
