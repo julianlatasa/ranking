@@ -13,22 +13,18 @@ from garminconnect2 import (
     Garmin
 )
 
+from singletonGarmin import SingletonGarmin
+
 import json
 import sqlite3
 
-from flask import Flask, request, render_template, abort, jsonify, g
+from flask import Flask, request, render_template, abort, jsonify
 
 
 
 app = Flask(__name__, template_folder='./')
+apiGarmin = SingletonGarmin()
 cache = {}
-
-def set_api(api):
-    if 'api' not in g:
-        g.api = api
-
-def get_api():
-    return g.api
 
 def create_connection(db_file):
     """ create a database connection to the SQLite database
@@ -76,40 +72,41 @@ def login():
     except:
         return "La fecha tiene un formato no valido", 403
     
+
+    apiGarmin.setParams(usuario, password)
     
-    api = Garmin(usuario, password)
+    api = apiGarmin.getApi()
     try:
         if (api.login() == False):
             return "Error al loguearse a Garmin", 403
     except:
         return "Error inesperado al loguearse a Garmin", 403
 
-    cache['today'] = today
-    set_api(api)
+    apiGarmin.setDate(today)
     return 'Login Ok! - Buscando contactos'
 
 @app.route('/logout', methods=['GET'])
 def logout():
-    api = get_api()
+    api = apiGarmin.getApi()
     api.logout
     return "Logout!"
 
 @app.route('/contacts', methods=['GET'])
 def contacts():
-    api = get_api()
+    api = apiGarmin.getApi()
     try:
         connections = api.get_connections()
     except:
         return "Error al obtener conexiones", 403
-    cache['connections'] = connections['userConnections']
+    apiGarmin.setConnections(connections['userConnections'])
     result = {'mensaje' : 'Contactos obtenidos! - Buscando datos personales',
               'contactos' : len(connections['userConnections'])}
     return jsonify(result)
 
 @app.route('/procesarme', methods=['GET'])
 def procesarme():
-    api = get_api()
-    today = cache['today']
+    api = apiGarmin.getApi()
+    today = apiGarmin.getDate()
 
     lastweek = today - datetime.timedelta(days=7)
     data = {'Usuario':'','Actividades':0, 'Duracion':0}
@@ -160,9 +157,9 @@ def procesarusuario():
         params = request.get_json()
         usuarionumero = params['usuarionumero']
 
-    api = get_api()
-    today = cache['today']
-    connections = cache['connections']
+    api = apiGarmin.getApi()
+    today = apiGarmin.getDate()
+    connections = apiGarmin.getConnections()
     
     lastweek = today - datetime.timedelta(days=7)
     data = {'Usuario':'','Actividades':0, 'Duracion':0}

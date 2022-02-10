@@ -131,9 +131,7 @@
 			contentType: "application/json"
 		}).done(function (data) {
     		updateProgress(20,data);
-    		setTimeout(function(){
     			get_contacts();
-            }, 500);
 	    }).fail(function (jqXHR, textStatus) {
 			showError(jqXHR.responseText);
         });
@@ -147,9 +145,7 @@
 		}).done(function (data) {
 			updateProgress(30,data.mensaje);
 			contactos = data.contactos;
-    		setTimeout(function(){
     			procesarme();
-            }, 500);
 	    }).fail(function (jqXHR, textStatus) {
 			showError(jqXHR.responseText);
         });
@@ -162,9 +158,7 @@
     		url:'/procesarme'
 		}).done(function (data) {
 			updateProgress(40,data);
-    		setTimeout(function(){
     			procesarcontactos();
-            }, 500);
 	    }).fail(function (jqXHR, textStatus) {
 			showError(jqXHR.responseText);
         });
@@ -172,7 +166,6 @@
 
 	procesarcontactos = function() {
     	for (let i = 0; i < contactos; i++) {
-      		setTimeout(function(){
         		var formvalues = {
                   		usuarionumero: i
         		}
@@ -187,7 +180,6 @@
         	    }).fail(function (jqXHR, textStatus) {
         			showError(jqXHR.responseText);
                 });
-            }, 500 * i);
         } 
     	logout();	
 	};
