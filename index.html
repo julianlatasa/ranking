@@ -131,8 +131,9 @@
 			contentType: "application/json"
 		}).done(function (data) {
     		updateProgress(20,data);
-    		sleep(500);
-			get_contacts();
+    		setTimeout(function(){
+    			get_contacts();
+            }, 500);
 	    }).fail(function (jqXHR, textStatus) {
 			showError(jqXHR.responseText);
         });
@@ -146,8 +147,9 @@
 		}).done(function (data) {
 			updateProgress(30,data.mensaje);
 			contactos = data.contactos;
-    		sleep(500);
-			procesarme();
+    		setTimeout(function(){
+    			procesarme();
+            }, 500);
 	    }).fail(function (jqXHR, textStatus) {
 			showError(jqXHR.responseText);
         });
@@ -160,8 +162,9 @@
     		url:'/procesarme'
 		}).done(function (data) {
 			updateProgress(40,data);
-    		sleep(500);
-			procesarcontactos();
+    		setTimeout(function(){
+    			procesarcontactos();
+            }, 500);
 	    }).fail(function (jqXHR, textStatus) {
 			showError(jqXHR.responseText);
         });
@@ -169,26 +172,24 @@
 
 	procesarcontactos = function() {
     	for (let i = 0; i < contactos; i++) {
-
-		var formvalues = {
-          		usuarionumero: i
-		}
-    		$.ajax({
-        		type:'POST',
-          		async: true,
-        		url:'/procesarusuario',
-        		data: JSON.stringify(formvalues), 
-    			contentType: "application/json"
-    		}).done(function (data) {
-   				updateProgress(40+i,data);
-        		sleep(500);
-   				logout();
-    	    }).fail(function (jqXHR, textStatus) {
-    			showError(jqXHR.responseText);
-            });
-
+      		setTimeout(function(){
+        		var formvalues = {
+                  		usuarionumero: i
+        		}
+        		$.ajax({
+            		type:'POST',
+              		async: true,
+            		url:'/procesarusuario',
+            		data: JSON.stringify(formvalues), 
+        			contentType: "application/json"
+        		}).done(function (data) {
+       				updateProgress(40+i,data);
+        	    }).fail(function (jqXHR, textStatus) {
+        			showError(jqXHR.responseText);
+                });
+            }, 500);
         } 
-	
+    	logout();	
 	};
 
 
@@ -199,7 +200,6 @@
         	url:'/logout'
   		}).done(function (data) {
 			updateProgress(40,data);
-    		sleep(500);
 			hidePleaseWait();
 	    }).fail(function (jqXHR, textStatus) {
 			showError(jqXHR.responseText);
@@ -209,7 +209,6 @@
       		async: true,
         	url:'/resultados'
   		}).done(function (data) {
-    		sleep(500);
 			$("#resultado").html(data)
 	    }).fail(function (jqXHR, textStatus) {
 			showError(jqXHR.responseText);
