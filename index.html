@@ -53,13 +53,14 @@
             <span class="sr-only" id="progresstext">Login a Garmin</span>
           </div>
         </div>
+        <span id="output"></span>
       </div>
     </div>
   </div>
 </div>
 
   <!-- Modal Error -->
-  <div class="modal fade" id="modalerror" role="dialog">
+  <div class="modal fade" id="modalError" role="dialog">
     <div class="modal-dialog">
     
       <!-- Modal content-->
@@ -87,29 +88,45 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js" integrity="sha384-QJHtvGhmr9XOIpI6YVutG+2QOK9T+ZnN4kzFN1RtK3zEFEIsxhlmWl5/YESvpZ13" crossorigin="anonymous"></script>
 
-
-
-
-
-
-
-
-
-
-
-
+<!--
 <p>This is the latest output: <span id="latest"></span></p>
 <p>This is all the output:</p>
 <ul id="output"></ul>
+-->
+
 <script>
     var latest = document.getElementById('latest');
     var output = document.getElementById('output');
-    var timer;
-    
     var lastResponseLength;
+    var progress = 0;
+
+    showPleaseWait = function () {
+        $('#pleaseWaitDialog').modal('show');
+    };
+
+    hidePleaseWait = function () {
+        $('#pleaseWaitDialog').modal('hide');
+    };
+
+    showError = function(mensaje) {
+    	hidePleaseWait();
+    	$("#error").html(mensaje);	
+    	$('#modalerror').modal('show');	
+    };
+
+    $('#cerrarError').on('click', function(e){
+    	$('#modalerror').modal('hide');	
+    });
+
+    updateProgress = function (value, text) {
+    	$('#progressbar').css('width', value+'%').attr('aria-valuenow', value);   
+    	$('#progresstext').html(text);
+    	$('#output').html(text);
+    };
 
 	$('#login-form').on('submit',function(e){
 		e.preventDefault();
+		showPleaseWait();
 		var formvalues = {
           		usuario: $("#usuario").val(),
           		password: $("#password").val(),
@@ -140,245 +157,39 @@
                     }
                     //var parsedResponse = JSON.parse(progressResponse);
                     //$('#progressTest').text(progressResponse);
-                    latest.textContent = progressResponse
+                    //latest.textContent = progressResponse
                     //$('#fullResponse').text(parsedResponse.message);
-                    var item = document.createElement('li');
+                    /*var item = document.createElement('li');
                     item.textContent = progressResponse;
-                    output.appendChild(item);
+                    output.appendChild(item);*/
+                    if (progress < 100) 
+                        progress = progress + 4;
+                    updateProgress(progress,progressResponse);
                     //$('.progress-bar').css('width', parsedResponse.progress + '%');
                 }
             }
 		}).done(function (data) {
-			$("#resultado").html(data)
-    		//updateProgress(20,data);
-            //hidePleaseWait();
-            latest.textContent = 'Done';
+    		updateProgress(100,'Finalizado');
+            //latest.textContent = 'Finalizado';
+			resultado();
 	    }).fail(function (jqXHR, textStatus) {
 			showError(jqXHR.responseText);
         });
     });
-
-
-/*
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', '/stream');
-        xhr.send();
-        var position = 0;
     
-        function handleNewData() {
-            // the response text include the entire response so far
-            // split the messages, then take the messages that haven't been handled yet
-            // position tracks how many messages have been handled
-            // messages end with a newline, so split will always show one extra empty message at the end
-            var messages = xhr.responseText.split('\n');
-            messages.slice(position, -1).forEach(function(value) {
-                latest.textContent = value;  // update the latest value in place
-                // build and append a new item to a list to log all output
-                var item = document.createElement('li');
-                item.textContent = value;
-                output.appendChild(item);
-            });
-            position = messages.length - 1;
-        }
-
-        timer = setInterval(function() {
-            // check the response for new data
-            handleNewData();
-            // stop checking once the response has ended
-            if (xhr.readyState == XMLHttpRequest.DONE) {
-                clearInterval(timer);
-                latest.textContent = 'Done';
-            }
-        }, 1000);
-    
-*/
-</script>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<script type="text/javascript">
-    var contactos = 0;
-
-
-    showPleaseWait = function () {
-        $('#pleaseWaitDialog').modal('show');
-    };
-
-    hidePleaseWait = function () {
-        $('#pleaseWaitDialog').modal('hide');
-    };
-
-    showError = function(mensaje) {
-    	hidePleaseWait();
-    	$("#error").html(mensaje);	
-    	$('#modalerror').modal('show');	
-    };
-
-    $('#cerrarError').on('click', function(e){
-    	$('#modalerror').modal('hide');	
-    });
-
-    updateProgress = function (value, text) {
-    	$('#progressbar').css('width', value+'%').attr('aria-valuenow', value);   
-    	$('#progresstext').html(text);
-    };
-
-	$('#login-form2').on('submit',function(e){
-		e.preventDefault();
-		showPleaseWait();
-    	//updateProgress(10,"Login a Garmin");
-    	updateProgress(100,"Consultando datos a Garmin");
-		var formvalues = {
-          		usuario: $("#usuario").val(),
-          		password: $("#password").val(),
-          		fecha: $("#fecha").val()
-		}
-		$.ajax({
-      		type:'POST',
+    resultado = function() {
+    	$.ajax({
+      		type:'GET',
       		async: true,
-      		url:'/query', // url:'/login',
-      		data: JSON.stringify(formvalues), 
-			contentType: "application/json"
+      		url:'/resultadoranking',
 		}).done(function (data) {
 			$("#resultado").html(data)
-    		//updateProgress(20,data);
-    		//setTimeout(function(){
-    		//	get_contacts();
-            //}, 250);
             hidePleaseWait();
 	    }).fail(function (jqXHR, textStatus) {
 			showError(jqXHR.responseText);
         });
-	});
-	
-	get_contacts = function() {
-		$.ajax({
-    		type:'GET',
-      		async: true,
-    		url:'/contacts'
-		}).done(function (data) {
-			updateProgress(30,data.mensaje);
-			contactos = data.contactos;
-    		setTimeout(function(){
-    			procesarme();
-            }, 250);
-	    }).fail(function (jqXHR, textStatus) {
-			showError(jqXHR.responseText);
-        });
-	};
 
-	procesarme = function() {
-		$.ajax({
-    		type:'GET',
-      		async: true,
-    		url:'/procesarme'
-		}).done(function (data) {
-			updateProgress(40,data);
-    		setTimeout(function(){
-    			procesarcontactosv2();
-            }, 250);
-	    }).fail(function (jqXHR, textStatus) {
-			showError(jqXHR.responseText);
-        });
-	};
-
-
-
-	procesarcontactos = function() {
-
-    	for (let i = 0; i < contactos; i++) {
-      		setTimeout(function(){
-        		var formvalues = {
-                  		usuarionumero: i
-        		}
-        		$.ajax({
-            		type:'POST',
-              		async: true,
-            		url:'/procesarusuario',
-            		data: JSON.stringify(formvalues), 
-        			contentType: "application/json"
-        		}).done(function (data) {
-       				updateProgress(40+(i+1),data);
-        	    }).fail(function (jqXHR, textStatus) {
-        			showError(jqXHR.responseText);
-                });
-            }, 250 * (i+1));
-        } 
-
-
-     	setTimeout(function(){
-        	logout();	
-        }, 250 * (contactos + 2) );
-	};
-
-
-	procesarcontactosv2 = function() {
-     	setTimeout(function(){
-            proccontacto(0) 
-        }, 250 );
-	};
-
-
-	proccontacto = function(actual) {
-  		$.ajax({
-      		type:'POST',
-        	async: true,
-      		url:'/procesarusuario',
-      		data: JSON.stringify({
-                usuarionumero: actual
-      		}), 
-  			contentType: "application/json"
-  		}).done(function (data) {
- 			updateProgress(40+(actual+1),data);
- 			if ((actual +1) < contactos) {
-             	setTimeout(function(){
-                    proccontacto(actual + 1) ;
-                }, 250 );
- 			} else if ((actual +1) == contactos) {
-		     	setTimeout(function(){
-                	logout();	
-                }, 250 );
-            }
-  	    }).fail(function (jqXHR, textStatus) {
-  			showError(jqXHR.responseText);
-          });
-	};
-
-
-	logout = function() {
-		$.ajax({
-            type:'GET',
-      		async: true,
-        	url:'/logout'
-  		}).done(function (data) {
-			updateProgress(40,data);
-			hidePleaseWait();
-	    }).fail(function (jqXHR, textStatus) {
-			showError(jqXHR.responseText);
-        });
-		$.ajax({
-            type:'GET',
-      		async: true,
-        	url:'/resultados'
-  		}).done(function (data) {
-			$("#resultado").html(data)
-	    }).fail(function (jqXHR, textStatus) {
-			showError(jqXHR.responseText);
-        });
-	};
-
+    }
 
 </script>
  
