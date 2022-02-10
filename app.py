@@ -58,9 +58,7 @@ def ranking():
         except:
             return "La fecha tiene un formato no valido", 403
     
-        apiGarmin.setParams(usuario, password)
-        
-        api = apiGarmin.getApi()
+        api = Garmin(usuario, password)
         try:
             if (api.login() == False):
                 return "Error al loguearse a Garmin", 403
