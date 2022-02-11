@@ -2,6 +2,7 @@
 # A very simple Flask Hello World app for you to get started with...
 import datetime
 import pandas as pd
+import sys
 
 from garminconnect import (
     GarminConnectConnectionError,
@@ -13,9 +14,7 @@ from garminconnect2 import (
     Garmin
 )
 
-from singletonGarmin import SingletonGarmin
-
-from flask import Flask, request, render_template, jsonify, session, Response, stream_with_context
+from flask import Flask, request, render_template, jsonify
 
 class mytimedelta(datetime.timedelta):
    def __str__(self):
@@ -28,10 +27,7 @@ class mytimedelta(datetime.timedelta):
 
 
 app = Flask(__name__, template_folder='./')
-apiGarmin = SingletonGarmin()
-app.secret_key = 'GarminConnect'
 cache = {}
-
 
 
 @app.route('/')
@@ -46,20 +42,14 @@ def form():
 def resultado():
     #data = [{'Usuario':'Nestor Santander ','Actividades':6,'Duracion':94348.390137},{'Usuario':'Sofia Pierantoni ','Actividades':6,'Duracion':19285.46582},{'Usuario':'Stelli ','Actividades':5,'Duracion':19879.184326},{'Usuario':'Zampo ','Actividades':5,'Duracion':19628.871094},{'Usuario':'degreefnacho ','Actividades':5,'Duracion':19588.374756},{'Usuario':'Guillermo Pagano ','Actividades':5,'Duracion':16861.946045},{'Usuario':'Julian Latasa ','Actividades':4,'Duracion':16469.471924},{'Usuario':'Gabriel Marti ','Actividades':4,'Duracion':15276.486816},{'Usuario':'PAOLA ','Actividades':4,'Duracion':11683.031982},{'Usuario':'lucasmartino88 ','Actividades':3,'Duracion':12260.957031},{'Usuario':'Osvaldo Victorel ','Actividades':3,'Duracion':11582.469849},{'Usuario':'Matías Lacoppola ','Actividades':3,'Duracion':11109.210449},{'Usuario':'Martin Escurra ','Actividades':2,'Duracion':8044.748047},{'Usuario':'Pedro Rocca ','Actividades':2,'Duracion':5875.759033},{'Usuario':'Alejandro Avalos ','Actividades':0,'Duracion':0.0},{'Usuario':'Ariel Gonzalez ','Actividades':0,'Duracion':0.0},{'Usuario':'Fernando Goya ','Actividades':0,'Duracion':0.0},{'Usuario':'Sebastian Pollo salerno ','Actividades':0,'Duracion':0.0},{'Usuario':'Tomas Scally ','Actividades':0,'Duracion':0.0}]
     data = cache['data']
+    cache['data'] = None
     df = pd.DataFrame(data)
     df.sort_values(by=['Actividades','Duracion'], inplace=True, ascending=False)
     df['Duracion'] = df['Duracion'].apply(lambda x: str(mytimedelta(seconds=x)))
     df['Posicion'] = df.groupby(['Actividades']).ngroup(ascending=False) + 1    #df.sort_values(by=['Actividades','Duracion'], inplace=True, ascending=False)
 
-    cache['data'] = []
-
     return render_template("ranking.html",result=df.to_dict('records'))
 
-@app.route('/resultadoranking', methods=['GET'])
-def resultadoranking():
-    resultado = cache['resultado']
-    cache['resultado'] = ''
-    return resultado
 
 @app.route('/resultadodates', methods=['GET'])
 def resultadodates():
@@ -78,7 +68,7 @@ def ranking():
         yield "Iniciando consulta\n" 
             
         if ((not usuario) or (not password)):
-            return "No se ingreso un usuario o una clave",403 
+            return "No se ingreso un usuario o una clave" 
         
         if (not fecha):
             return "No se ingreso una fecha",403
@@ -93,7 +83,7 @@ def ranking():
             if (api.login() == False):
                 return "Error al loguearse a Garmin", 403
         except:
-            return "Error inesperado al loguearse a Garmin" + apiGarmin.getParams(), 403
+            return "Error inesperado al loguearse a Garmin", 403
     
         yield "Obteniendo contactos\n"
         
@@ -107,7 +97,6 @@ def ranking():
     
         userConnections = connections['userConnections']
 
-        lastweek = today - datetime.timedelta(days=7)
         data = {'Usuario':'','Actividades':0, 'Duracion':0}
     
         date_list = [today - datetime.timedelta(days=x) for x in range(7)]
@@ -147,11 +136,10 @@ def ranking():
         #data['Duracion'] = mytimedelta(seconds=dur)
         data['Duracion'] = dur
     
-        cache['dates'] = []
-        cache['dates'].append(dates)
-    
-        cache['data'] = []
-        cache['data'].append(data)
+        dateslist = []
+        dateslist.append(dates)
+        datalist = []
+        datalist.append(data)
 
         for user in userConnections:    
     
@@ -193,29 +181,13 @@ def ranking():
             #data['Duracion'] = mytimedelta(seconds=dur)
             data['Duracion'] = dur
             
-            cache['dates'].append(dates)
-            cache['data'].append(data)
+            dateslist.append(dates)
+            datalist.append(data)
+
+        cache['data'] = datalist
 
         api.logout
     
-        data = cache['data']
-        df = pd.DataFrame(data)
-        df.sort_values(by=['Actividades','Duracion'], inplace=True, ascending=False)
-    
-        result = df.to_html()
-        #cache['data'] = []
-
-        cache['resultado'] = result   
-
-        dates = cache['dates']
-        df = pd.DataFrame(dates)
-        #df.sort_values(by=['Actividades','Duracion'], inplace=True, ascending=False)
-    
-        result = df.to_html()
-        cache['dates'] = []
-
-        cache['resultadodates'] = result   
-
     return app.response_class(generate(), mimetype="text/plain", headers={'X-Accel-Buffering': 'no'})
    
 if __name__ =="__main__":

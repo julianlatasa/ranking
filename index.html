@@ -22,9 +22,24 @@
                 <input type="password" class="form-control" id="password" placeholder="Password">
                 <label for="password">Password</label>
               </div>
+              
               <div class="form-floating mb-3">
-        	<input type="date" class="form-control" id="fechahasta" placeholder="FechaHasta">
+
+<div class="row g-2">
+  <div class="col-md">
+    <div class="form-floating">
+        	<input type="date" class="form-control" id="fechadesde" placeholder="FechaDesde"> 
+                <label for="fechadesde">Fecha Desde</label>
+    </div>
+  </div>
+  <div class="col-md">
+    <div class="form-floating">
+        	<input type="date" class="form-control" id="fechahasta" placeholder="FechaHasta"> 
                 <label for="fechahasta">Fecha Hasta</label>
+    </div>
+  </div>
+</div>
+
               </div>
 
               <div class="d-grid">
@@ -43,11 +58,12 @@
 <div id="resultadodates"></div>
 
   <!-- Modal Prograso -->
-<div class="modal fade" id="pleaseWaitDialog" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+<div class="modal fade" id="pleaseWaitDialog" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="pleaseWaitDialog" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-          <h1>Procesando...</h1>
+          <h5 class="modal-title" id="staticBackdropLabel">Procesando...</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
         <div class="progress">
@@ -62,19 +78,20 @@
 </div>
 
   <!-- Modal Error -->
-  <div class="modal fade" id="modalError" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal fade" id="errorDialog" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false"  aria-labelledby="errorDialog" aria-hidden="true">
     <div class="modal-dialog">
     
       <!-- Modal content-->
       <div class="modal-content">
         <div class="modal-header">
-          <h1>Error!</h1>
+          <h5 class="modal-title" id="staticBackdropLabel">Error!</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <p id="error"></p>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-default" data-dismiss="modal" id="cerrarError">Cerrar</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
         </div>
       </div>
       
@@ -89,36 +106,44 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js" integrity="sha384-QJHtvGhmr9XOIpI6YVutG+2QOK9T+ZnN4kzFN1RtK3zEFEIsxhlmWl5/YESvpZ13" crossorigin="anonymous"></script>
 
-<!--
-<p>This is the latest output: <span id="latest"></span></p>
-<p>This is all the output:</p>
-<ul id="output"></ul>
--->
-
 <script>
-    //var latest = document.getElementById('latest');
-    //var output = document.getElementById('output');
     var lastResponseLength;
     var progress = 0;
 
+    var pleaseWaitDialog = new bootstrap.Modal($('#pleaseWaitDialog'))
+
     showPleaseWait = function () {
-        $('#pleaseWaitDialog').modal('show');
+        pleaseWaitDialog.show();
     };
 
     hidePleaseWait = function () {
-        $('#pleaseWaitDialog').modal('hide');
+        pleaseWaitDialog.hide();
     };
 
-    showError = function(mensaje) {
-    	hidePleaseWait();
+    var errorDialog = new bootstrap.Modal($('#errorDialog'))
+
+    showError = function (mensaje) {
     	$("#error").html(mensaje);	
-    	$('#modalError').modal('show');	
+        errorDialog.show();
     };
 
-    $('#cerrarError').on('click', function(e){
-    	$('#modalerror').modal('hide');	
+    hideError = function () {
+        errorDialog.hide();
+    };
+    
+    $('#fechadesde').change(function () {
+        var date = new Date($(this).val());
+        date.setDate(date.getDate() + 6);
+        $('#fechahasta').val(date.toISOString().slice(0,10));
     });
 
+    $('#fechahasta').change(function () {
+        var date = new Date($(this).val());
+        date.setDate(date.getDate() - 6);
+        $('#fechadesde').val(date.toISOString().slice(0,10));
+    });
+
+    
     updateProgress = function (value, text) {
     	$('#progressbar').css('width', value+'%').attr('aria-valuenow', value);   
     	$('#progresstext').html(text);
@@ -127,6 +152,8 @@
 
 	$('#login-form').on('submit',function(e){
 		e.preventDefault();
+		updateProgress(0,"");
+		progress = 0;
 		showPleaseWait();
 		var formvalues = {
           		usuario: $("#usuario").val(),
@@ -165,8 +192,9 @@
 		}).done(function (data) {
     		updateProgress(100,'Finalizado');
 			resultado();
-			resultadodates();
 	    }).fail(function (jqXHR, textStatus) {
+    	    hidePleaseWait();
+    	    console.log(jqXHR);
 			showError(jqXHR.responseText);
         });
     });
@@ -180,23 +208,12 @@
 			$("#resultado").html(data)
             hidePleaseWait();
 	    }).fail(function (jqXHR, textStatus) {
+    	    hidePleaseWait();
 			showError(jqXHR.responseText);
         });
     }
 
-    resultadodates = function() {
-    	$.ajax({
-      		type:'GET',
-      		async: true,
-      		url:'/resultadodates',
-		}).done(function (data) {
-			//$("#resultadodates").html(data)
-            hidePleaseWait();
-	    }).fail(function (jqXHR, textStatus) {
-			showError(jqXHR.responseText);
-        });
 
-    }
 
 </script>
  
