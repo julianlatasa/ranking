@@ -42,7 +42,6 @@ def form():
 def resultado():
     #data = [{'Usuario':'Nestor Santander ','Actividades':6,'Duracion':94348.390137},{'Usuario':'Sofia Pierantoni ','Actividades':6,'Duracion':19285.46582},{'Usuario':'Stelli ','Actividades':5,'Duracion':19879.184326},{'Usuario':'Zampo ','Actividades':5,'Duracion':19628.871094},{'Usuario':'degreefnacho ','Actividades':5,'Duracion':19588.374756},{'Usuario':'Guillermo Pagano ','Actividades':5,'Duracion':16861.946045},{'Usuario':'Julian Latasa ','Actividades':4,'Duracion':16469.471924},{'Usuario':'Gabriel Marti ','Actividades':4,'Duracion':15276.486816},{'Usuario':'PAOLA ','Actividades':4,'Duracion':11683.031982},{'Usuario':'lucasmartino88 ','Actividades':3,'Duracion':12260.957031},{'Usuario':'Osvaldo Victorel ','Actividades':3,'Duracion':11582.469849},{'Usuario':'Matías Lacoppola ','Actividades':3,'Duracion':11109.210449},{'Usuario':'Martin Escurra ','Actividades':2,'Duracion':8044.748047},{'Usuario':'Pedro Rocca ','Actividades':2,'Duracion':5875.759033},{'Usuario':'Alejandro Avalos ','Actividades':0,'Duracion':0.0},{'Usuario':'Ariel Gonzalez ','Actividades':0,'Duracion':0.0},{'Usuario':'Fernando Goya ','Actividades':0,'Duracion':0.0},{'Usuario':'Sebastian Pollo salerno ','Actividades':0,'Duracion':0.0},{'Usuario':'Tomas Scally ','Actividades':0,'Duracion':0.0}]
     data = cache['data']
-    cache['data'] = None
     df = pd.DataFrame(data)
     df.sort_values(by=['Actividades','Duracion'], inplace=True, ascending=False)
     df['Duracion'] = df['Duracion'].apply(lambda x: str(mytimedelta(seconds=x)))
@@ -187,6 +186,7 @@ def ranking():
             dateslist.append(dates)
             datalist.append(data)
 
+        cache['data'] = []
         cache['data'] = datalist
 
         api.logout
