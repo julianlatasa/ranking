@@ -17,6 +17,16 @@ from singletonGarmin import SingletonGarmin
 
 from flask import Flask, request, render_template, jsonify, session, Response, stream_with_context
 
+class mytimedelta(datetime.timedelta):
+   def __str__(self):
+      seconds = self.total_seconds()
+      hours = seconds // 3600
+      minutes = (seconds % 3600) // 60
+      seconds = seconds % 60
+      str = '{:02d}:{:02d}:{:02d}'.format(int(hours), int(minutes), int(seconds))
+      return (str)
+
+
 app = Flask(__name__, template_folder='./')
 apiGarmin = SingletonGarmin()
 app.secret_key = 'GarminConnect'
@@ -31,6 +41,19 @@ def hello_world():
 @app.route('/form', methods=['GET'])
 def form():
     return render_template('index.html')
+
+@app.route('/resultado', methods=['GET'])
+def resultado():
+    #data = [{'Usuario':'Nestor Santander ','Actividades':6,'Duracion':94348.390137},{'Usuario':'Sofia Pierantoni ','Actividades':6,'Duracion':19285.46582},{'Usuario':'Stelli ','Actividades':5,'Duracion':19879.184326},{'Usuario':'Zampo ','Actividades':5,'Duracion':19628.871094},{'Usuario':'degreefnacho ','Actividades':5,'Duracion':19588.374756},{'Usuario':'Guillermo Pagano ','Actividades':5,'Duracion':16861.946045},{'Usuario':'Julian Latasa ','Actividades':4,'Duracion':16469.471924},{'Usuario':'Gabriel Marti ','Actividades':4,'Duracion':15276.486816},{'Usuario':'PAOLA ','Actividades':4,'Duracion':11683.031982},{'Usuario':'lucasmartino88 ','Actividades':3,'Duracion':12260.957031},{'Usuario':'Osvaldo Victorel ','Actividades':3,'Duracion':11582.469849},{'Usuario':'Matías Lacoppola ','Actividades':3,'Duracion':11109.210449},{'Usuario':'Martin Escurra ','Actividades':2,'Duracion':8044.748047},{'Usuario':'Pedro Rocca ','Actividades':2,'Duracion':5875.759033},{'Usuario':'Alejandro Avalos ','Actividades':0,'Duracion':0.0},{'Usuario':'Ariel Gonzalez ','Actividades':0,'Duracion':0.0},{'Usuario':'Fernando Goya ','Actividades':0,'Duracion':0.0},{'Usuario':'Sebastian Pollo salerno ','Actividades':0,'Duracion':0.0},{'Usuario':'Tomas Scally ','Actividades':0,'Duracion':0.0}]
+    data = cache['data']
+    df = pd.DataFrame(data)
+    df.sort_values(by=['Actividades','Duracion'], inplace=True, ascending=False)
+    df['Duracion'] = df['Duracion'].apply(lambda x: str(mytimedelta(seconds=x)))
+    df['Posicion'] = df.groupby(['Actividades']).ngroup(ascending=False) + 1    #df.sort_values(by=['Actividades','Duracion'], inplace=True, ascending=False)
+
+    cache['data'] = []
+
+    return render_template("ranking.html",result=df.to_dict('records'))
 
 @app.route('/resultadoranking', methods=['GET'])
 def resultadoranking():
@@ -121,7 +144,8 @@ def ranking():
         for d in date_list:
             data['Actividades'] = data['Actividades'] + len(dates[d])
 
-        data['Duracion'] = datetime.timedelta(seconds=dur)
+        #data['Duracion'] = mytimedelta(seconds=dur)
+        data['Duracion'] = dur
     
         cache['dates'] = []
         cache['dates'].append(dates)
@@ -166,7 +190,8 @@ def ranking():
             for d in date_list:
                 data['Actividades'] = data['Actividades'] + len(dates[d])
         
-            data['Duracion'] = datetime.timedelta(seconds=dur)
+            #data['Duracion'] = mytimedelta(seconds=dur)
+            data['Duracion'] = dur
             
             cache['dates'].append(dates)
             cache['data'].append(data)
@@ -178,7 +203,7 @@ def ranking():
         df.sort_values(by=['Actividades','Duracion'], inplace=True, ascending=False)
     
         result = df.to_html()
-        cache['data'] = []
+        #cache['data'] = []
 
         cache['resultado'] = result   
 
@@ -191,13 +216,8 @@ def ranking():
 
         cache['resultadodates'] = result   
 
-
-    #response = Response(stream_with_context(generate()),mimetype="text/plain")
-    #response.headers['X-Accel-Buffering'] = 'no'
-    #return response
     return app.response_class(generate(), mimetype="text/plain", headers={'X-Accel-Buffering': 'no'})
-    
-
+   
 if __name__ =="__main__":
     app.run(debug=True, port=8080)
     

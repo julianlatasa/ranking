@@ -175,7 +175,7 @@
     	$.ajax({
       		type:'GET',
       		async: true,
-      		url:'/resultadoranking',
+      		url:'/resultado',
 		}).done(function (data) {
 			$("#resultado").html(data)
             hidePleaseWait();
@@ -190,7 +190,7 @@
       		async: true,
       		url:'/resultadodates',
 		}).done(function (data) {
-			$("#resultadodates").html(data)
+			//$("#resultadodates").html(data)
             hidePleaseWait();
 	    }).fail(function (jqXHR, textStatus) {
 			showError(jqXHR.responseText);
